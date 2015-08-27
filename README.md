@@ -5,10 +5,10 @@ Convert IPython notebooks to latex customized
 
 ###To PDF:
 ```
-./convert_nb_to_pdf.py Example_Notebook.ipynb --outdir pdfoutput --pdf
+./convert_nb_to_pdf.py example/notebook/Example_Notebook.ipynb --pdf --outdir example/outpdf/
 ```
 
 ###To Latex:
 ```
-./convert_nb_to_pdf.py Example_Notebook.ipynb --outdir latexoutput --latex
+./convert_nb_to_pdf.py example/notebook/Example_Notebook.ipynb --latex --outdir example/outlatex/
 ```
