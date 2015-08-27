@@ -13,8 +13,13 @@ import argparse
 def convert_notebook(notebook_filename, output_dir=None, exporter_class=PDFExporter):
     """Convert notebook. 
     To PDF unless specified differently by exporter."""
+    assert exporter_class == PDFExporter or exporter_class == LatexExporter
     (body, resources) = convert_to_body_resources(notebook_filename, exporter_class=exporter_class)
-    write_body_resources(notebook_filename, body, resources, output_dir=output_dir)
+    if exporter_class == LatexExporter:
+        write_body_resources(notebook_filename, body, resources, output_dir=output_dir)
+    else:
+        write_only_body(notebook_filename, body, output_dir=output_dir)
+        
     
 def convert_to_body_resources(notebook_filename, exporter_class=PDFExporter):
     """Convert notebook to body and resources... replaces markdown local images on the way."""
@@ -135,26 +140,40 @@ def to_notebook_basename(notebook_filename):
     return os.path.split(notebook_filename)[1].replace('.ipynb', '')
 
 def ensure_directory_exists(directory_name):
-    """Ensure directory exists by creating it if it does not exist."""
+    """Ensure directory exists by creating it if it does not exist.
+    Ignores empty string."""
     # see http://stackoverflow.com/a/273227/1469195
     # there is a exotic race condition here, that I couldn't really care less about :P
     # (if the directory is created (e.g., from another program)
     # between the if check and the os makedirs,
     # there will be an error...)
-    if not os.path.exists(directory_name):
+    if not os.path.exists(directory_name) and not directory_name == '':
         os.makedirs(directory_name)
     
 
 def write_body_resources(notebook_filename, body, resources, output_dir=None):
     """Write actual notebook and files to output dir.
     Use notebook directory if output dir is none"""
-    if output_dir is None:
-        notebook_base_dir = os.path.split(notebook_filename)[0]
-        output_dir = notebook_base_dir
+    output_dir = determine_output_dir(notebook_filename, output_dir)
     config = Config()
     config.FilesWriter.build_directory = output_dir
     file_writer = FilesWriter(config=config)
     file_writer.write(body, resources, notebook_name=to_notebook_basename(notebook_filename))
+    
+def write_only_body(notebook_filename, body, output_dir=None):
+    output_dir = determine_output_dir(notebook_filename, output_dir)
+    config = Config()
+    config.FilesWriter.build_directory = output_dir
+    file_writer = FilesWriter(config=config)
+    resources = dict() # no resources since we don't want files written
+    file_writer.write(body, resources, notebook_name=to_notebook_basename(notebook_filename))
+    
+def determine_output_dir(notebook_filename, output_dir):
+    if output_dir is None:
+        notebook_base_dir = os.path.split(notebook_filename)[0]
+        output_dir = notebook_base_dir
+    return output_dir
+    
 
 def parse_command_line_arguments():
     parser = argparse.ArgumentParser(
