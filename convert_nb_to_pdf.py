@@ -166,7 +166,9 @@ def write_only_body(notebook_filename, body, output_dir=None):
     config = Config()
     config.FilesWriter.build_directory = output_dir
     file_writer = FilesWriter(config=config)
-    resources = dict() # no resources since we don't want files written
+    # no resources since we don't want files written, but add .pdf extension
+    resources = dict(output_extension='.pdf') 
+    # add pdf to filename
     file_writer.write(body, resources, notebook_name=to_notebook_basename(notebook_filename))
     
 def determine_output_dir(notebook_filename, output_dir):
