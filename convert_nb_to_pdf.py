@@ -76,7 +76,7 @@ def preprocess_markdown_local_images(notebook, notebook_filename):
     resources['unique_key'] = notebook_name
     notebook_out_dir = '%s_files' % notebook_name
     resources['output_files_dir'] = notebook_out_dir
-
+    notebook_dir = os.path.dirname(notebook_filename)
    
     # Find local images with 
     #![Alt text](/path/to/img.jpg "Optional title") tags
@@ -94,8 +94,8 @@ def preprocess_markdown_local_images(notebook, notebook_filename):
                 # and a file img__1.jpg...
                 img_no_dir_name = "__".join(os.path.split(img_filename))
                 resource_key = os.path.join(resources['output_files_dir'], img_no_dir_name)
-                
-                with open(img_filename, 'rb') as img_file:
+                img_path = os.path.join(notebook_dir, img_filename)
+                with open(img_path, 'rb') as img_file:
                     data = img_file.read()
                     resources['outputs'][resource_key] = data
                 
