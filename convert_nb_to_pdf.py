@@ -84,8 +84,9 @@ def preprocess_markdown_local_images(notebook, notebook_filename):
     resources['outputs'] = dict()
     for cell in notebook['cells']:
         if cell['cell_type'] == 'markdown':
-            # It will find the images. Hopefully.
-            all_img_filenames = re.findall(r"!\[[^\]]*\]\(([^ \"']*)[^\)]*\)", cell['source'])
+            # It will find the images. Hopefully. (it will capture img filename by capturing imggroup)
+            img_tag_match_regex = r"!\[[^\]]*\]\(([^ \"'\)]*)[^\)]*\)"
+            all_img_filenames = re.findall(img_tag_match_regex, cell['source'])
 
             for img_filename in all_img_filenames:
                 # replace directory by two __
@@ -110,7 +111,7 @@ def preprocess_markdown_local_images(notebook, notebook_filename):
             while marker in cell['source']:
                 marker += 'fix_adjust_image'
             
-            cell['source'] = re.sub(r"!\[[^\]]*\]\(([^ \"']*)[^\)]*\)", 
+            cell['source'] = re.sub(img_tag_match_regex,
                    "\\\\begin{center}\n" +
                    "\\\\adjustimage{max size={0.9\\linewidth}{0.9\\paperheight}}{" + 
                    resources['output_files_dir'] + "/" +
