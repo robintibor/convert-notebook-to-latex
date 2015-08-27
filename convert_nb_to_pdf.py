@@ -7,21 +7,55 @@ from nbconvert.exporters import LatexExporter, PDFExporter
 from nbconvert.writers import FilesWriter
 from traitlets.config import Config
 import sys
+from jinja2 import DictLoader
+import argparse
 
-def convert_notebook(notebook_filename, output_dir=None, exporter=PDFExporter()):
+def convert_notebook(notebook_filename, output_dir=None, exporter_class=PDFExporter):
     """Convert notebook. 
     To PDF unless specified differently by exporter."""
-    (body, resources) = convert_to_body_resources(notebook_filename, exporter=exporter)
+    (body, resources) = convert_to_body_resources(notebook_filename, exporter_class=exporter_class)
     write_body_resources(notebook_filename, body, resources, output_dir=output_dir)
     
-def convert_to_body_resources(notebook_filename, exporter=LatexExporter()):
+def convert_to_body_resources(notebook_filename, exporter_class=PDFExporter):
     """Convert notebook to body and resources... replaces markdown local images on the way."""
     ## Read the actual notebook
     notebook = nbformat.read(notebook_filename, as_version=4)
     notebook, resources = preprocess_markdown_local_images(notebook, notebook_filename)
     
-    if exporter is None:
-        exporter = LatexExporter()
+    # Overwrite article style    
+    dl = DictLoader({'article.tplx':
+    """
+    % Default to the notebook output style
+    ((* if not cell_style is defined *))
+        ((* set cell_style = 'style_ipython.tplx' *))
+    ((* endif *))
+
+    % Inherit from the specified cell style.
+    ((* extends cell_style *))
+
+
+    %===============================================================================
+    % Latex Article
+    %===============================================================================
+
+    ((* block docclass *))
+    % In case you want to change it
+    \documentclass{article}
+    ((* endblock docclass *))
+    
+    ((* block header *))
+        ((( super() )))
+        % Indentation, no indetation for paragraphs, but blank lines
+        \setlength{\parskip}{\medskipamount}
+        \setlength{\parindent}{0pt}
+
+    ((* endblock header *))
+    """})
+        
+    if exporter_class is None:
+        exporter = LatexExporter(extra_loaders=[dl])
+    else:
+        exporter = exporter_class(extra_loaders=[dl])
     (body, resources) = exporter.from_notebook_node(notebook,resources=resources)
     return body, resources
     
@@ -121,15 +155,34 @@ def write_body_resources(notebook_filename, body, resources, output_dir=None):
     config.FilesWriter.build_directory = output_dir
     file_writer = FilesWriter(config=config)
     file_writer.write(body, resources, notebook_name=to_notebook_basename(notebook_filename))
+
+def parse_command_line_arguments():
+    parser = argparse.ArgumentParser(
+        description="""Convert notebook to pdf an experiment from a YAML experiment file.
+        Example: ./convert_nb_to_pdf.py notebooks/Example_Notebook.yaml --outdir out --pdf """
+    )
+    parser.add_argument('notebook_file_name', action='store',
+                        choices=None,
+                        help='File name of notebook to convert')
     
+    group_convert_type = parser.add_mutually_exclusive_group(required=True)
+    
+    group_convert_type.add_argument("--pdf", action="store_true",  help="Convert to pdf.")
+    group_convert_type.add_argument("--latex", action="store_true", help="Convert to latex.")
+    parser.add_argument('--outdir', action='store',
+                        default=None,
+                        help='Directory to write latex or pdf output to. Defaults to same directory as notebook.')
+    args = parser.parse_args()
+    return args
     
 if __name__ == '__main__':
-    if (len(sys.argv) != 2 and len(sys.argv) != 3):
-        print ("Usage: ./convert_latex.py notebook_filename [output_directory]")
-        sys.exit(0)
-    notebook_filename = sys.argv[1]
-    if len(sys.argv) > 2:
-        output_dir = sys.argv[2]
+    args = parse_command_line_arguments()
+    notebook_filename = args.notebook_file_name
+    output_dir = args.outdir
+
+    if args.pdf:
+        exporter_class = PDFExporter
     else:
-        output_dir = None
-    convert_notebook(notebook_filename, output_dir=output_dir, exporter=PDFExporter())
+        exporter_class = LatexExporter
+        
+    convert_notebook(notebook_filename, output_dir=output_dir, exporter_class=exporter_class)
