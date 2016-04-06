@@ -17,7 +17,9 @@ setup(
         "Intended Audience :: Science/Research",
         "Programming Language :: Python :: 2.7",
         "Topic :: Publication :: Jupyter Notebook :: Conversion PDF HTML LATEX",
-        ],
+        ], 
+        
+    scripts=['nb_to_html.py', 'nb_to_pdf.py', 'nb_to_tex.py'],
     keywords="",
     author="Robin Tibor Schirrmeister",
     author_email="robintibor@googlegroups.com",
